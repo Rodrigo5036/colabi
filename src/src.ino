@@ -1,4 +1,3 @@
-//1
 #include <WiFi.h>
 #include <WebServer.h>
 #include <SPIFFS.h>
@@ -18,10 +17,16 @@ String password = "";
 bool isUpdating = false;
 int otaProgress = 0;
 
+const int LED_PIN = 2;
+unsigned long lastBlink = 0;
+bool ledState = false;
+
 void setup() {
   Serial.begin(115200);
   delay(500);
   Serial.println("🔌 Iniciando ESP32...");
+
+  pinMode(LED_PIN, OUTPUT);
 
   if (!SPIFFS.begin(true)) {
     Serial.println("❌ Error iniciando SPIFFS");
@@ -35,6 +40,13 @@ void setup() {
 
 void loop() {
   server.handleClient();
+
+  // Parpadeo LED en pin 2
+  if (millis() - lastBlink > 500) {
+    ledState = !ledState;
+    digitalWrite(LED_PIN, ledState);
+    lastBlink = millis();
+  }
 }
 
 void loadCredentials() {

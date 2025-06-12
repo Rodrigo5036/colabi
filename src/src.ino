@@ -1,4 +1,3 @@
-//2
 #include <WiFi.h>
 #include <WebServer.h>
 #include <SPIFFS.h>
@@ -15,10 +14,11 @@ WebServer server(80);
 
 String ssid = "";
 String password = "";
+bool isUpdating = false;
+int otaProgress = 0;
 
 void setup() {
   Serial.begin(115200);
-  pinMode(2, OUTPUT);
   delay(500);
   Serial.println("🔌 Iniciando ESP32...");
 
@@ -28,63 +28,33 @@ void setup() {
   }
 
   loadCredentials();
-
-  if (ssid == "") {
-    startAPMode();
-  } else {
-    connectToWiFi();
-  }
-
+  startAPMode();
   setupServer();
 }
 
 void loop() {
   server.handleClient();
-
-  digitalWrite(2, HIGH);
-  delay(500);
-  digitalWrite(2, LOW);
-  delay(500);
 }
-
 
 void loadCredentials() {
   File file = SPIFFS.open(CONFIG_FILE);
-  if (!file) {
-    Serial.println("⚠️ No se encontró configuración WiFi");
-    return;
-  }
+  if (!file) return;
 
   StaticJsonDocument<256> doc;
-  DeserializationError error = deserializeJson(doc, file);
-  if (error) {
-    Serial.println("❌ Error leyendo JSON");
-    return;
+  if (deserializeJson(doc, file) == DeserializationError::Ok) {
+    ssid = doc["ssid"].as<String>();
+    password = doc["password"].as<String>();
   }
-
-  ssid = doc["ssid"].as<String>();
-  password = doc["password"].as<String>();
+  file.close();
 }
 
-void connectToWiFi() {
-  Serial.printf("🔗 Conectando a %s...
-", ssid.c_str());
-  WiFi.begin(ssid.c_str(), password.c_str());
-
-  unsigned long start = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
-    delay(500);
-    Serial.print(".");
-  }
-
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("\n✅ Conectado a WiFi!");
-    Serial.print("IP local: ");
-    Serial.println(WiFi.localIP());
-  } else {
-    Serial.println("\n⚠️ Fallo al conectar, iniciando modo AP");
-    startAPMode();
-  }
+void saveCredentials(const String& ssid, const String& password) {
+  StaticJsonDocument<256> doc;
+  doc["ssid"] = ssid;
+  doc["password"] = password;
+  File file = SPIFFS.open(CONFIG_FILE, "w");
+  serializeJson(doc, file);
+  file.close();
 }
 
 void startAPMode() {
@@ -96,29 +66,29 @@ void startAPMode() {
 
 void setupServer() {
   server.on("/", HTTP_GET, []() {
-    String html = "<h2>Configuración WiFi</h2><form method='POST' action='/save'>";
-    html += "SSID: <input name='ssid'><br>Password: <input name='pass' type='password'><br>";
-    html += "<button type='submit'>Guardar</button></form><br><form action='/update'><button>Actualizar Firmware OTA</button></form>";
+    String html = "<html><body style='font-size:18px;'>";
+    html += "<h2>ESP32 OTA Configuración</h2>";
+    html += "<form method='POST' action='/save'>";
+    html += "SSID: <input name='ssid' style='font-size:18px'><br>";
+    html += "Password: <input type='password' name='pass' style='font-size:18px'><br><br>";
+    html += "<button type='submit' style='font-size:18px'>Guardar WiFi</button></form><br><br>";
+    html += "<form action='/update'><button style='font-size:18px'>Actualizar Firmware OTA</button></form>";
+    if (isUpdating) {
+      html += "<p>📦 Progreso: " + String(otaProgress) + "%</p>";
+    }
+    html += "</body></html>";
     server.send(200, "text/html", html);
   });
 
   server.on("/save", HTTP_POST, []() {
     ssid = server.arg("ssid");
     password = server.arg("pass");
-
-    StaticJsonDocument<256> doc;
-    doc["ssid"] = ssid;
-    doc["password"] = password;
-
-    File file = SPIFFS.open(CONFIG_FILE, "w");
-    serializeJson(doc, file);
-    file.close();
-
-    server.send(200, "text/html", "<p>Guardado. Reinicia manualmente el dispositivo.</p>");
+    saveCredentials(ssid, password);
+    server.send(200, "text/html", "<p>✅ Credenciales guardadas. Ahora puedes presionar Actualizar Firmware OTA.</p><a href='/'>Volver</a>");
   });
 
   server.on("/update", HTTP_GET, []() {
-    server.send(200, "text/plain", "Iniciando OTA...");
+    server.send(200, "text/html", "<p>🔄 Iniciando actualización OTA... Verifica el monitor serial para ver el progreso.</p><a href='/'>Volver</a>");
     performOTAUpdate();
   });
 
@@ -126,6 +96,9 @@ void setupServer() {
 }
 
 void performOTAUpdate() {
+  isUpdating = true;
+  otaProgress = 0;
+
   HTTPClient http;
   http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
   http.begin(FIRMWARE_URL);
@@ -148,6 +121,7 @@ void performOTAUpdate() {
 
           int percent = (totalRead * 100) / contentLength;
           if (percent != lastPercent) {
+            otaProgress = percent;
             Serial.printf("📦 Progreso: %d%%\n", percent);
             lastPercent = percent;
           }
@@ -156,6 +130,7 @@ void performOTAUpdate() {
 
       if (Update.end(true)) {
         Serial.println("✅ OTA completada. Reiniciando...");
+        delay(2000);
         ESP.restart();
       } else {
         Serial.println("❌ Error al finalizar la actualización.");
@@ -168,4 +143,5 @@ void performOTAUpdate() {
   }
 
   http.end();
+  isUpdating = false;
 }

@@ -1,150 +1,49 @@
-#include <WiFi.h>
-#include <WebServer.h>
-#include <SPIFFS.h>
-#include <HTTPClient.h>
-#include <Update.h>
-#include <ArduinoJson.h>
+name: Compilar y liberar firmware OTA
 
-#define FIRMWARE_URL "https://github.com/Rodrigo5036/colabi/releases/download/v-latest/firmware.bin"
-#define AP_SSID "ESP32_SETUP"
-#define AP_PASS ""
-#define CONFIG_FILE "/config.json"
+on:
+  push:
+    paths:
+      - 'src/**.ino'
 
-WebServer server(80);
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-String ssid = "";
-String password = "";
-bool isUpdating = false;
-int otaProgress = 0;
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v3
 
-void setup() {
-  Serial.begin(115200);
-  delay(500);
-  Serial.println("🔌 Iniciando ESP32...");
+      - name: Instalar Arduino CLI
+        run: |
+          curl -fsSL https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Linux_64bit.tar.gz -o arduino-cli.tar.gz
+          tar -xzf arduino-cli.tar.gz
+          sudo mv arduino-cli /usr/local/bin/
 
-  if (!SPIFFS.begin(true)) {
-    Serial.println("❌ Error iniciando SPIFFS");
-    return;
-  }
+      - name: Instalar ESP32 core
+        run: |
+          arduino-cli config init
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32
+          arduino-cli lib install "ArduinoJson"
 
-  loadCredentials();
-  startAPMode();
-  setupServer();
-}
+      - name: Compilar código .ino
+        run: |
+          mkdir -p build
+          arduino-cli compile --fqbn esp32:esp32:esp32 --output-dir build src/
 
-void loop() {
-  server.handleClient();
-}
+      - name: Renombrar binario
+        run: |
+          mkdir -p release
+          cp build/src.ino.bin release/firmware.bin
 
-void loadCredentials() {
-  File file = SPIFFS.open(CONFIG_FILE);
-  if (!file) return;
-
-  StaticJsonDocument<256> doc;
-  if (deserializeJson(doc, file) == DeserializationError::Ok) {
-    ssid = doc["ssid"].as<String>();
-    password = doc["password"].as<String>();
-  }
-  file.close();
-}
-
-void saveCredentials(const String& ssid, const String& password) {
-  StaticJsonDocument<256> doc;
-  doc["ssid"] = ssid;
-  doc["password"] = password;
-  File file = SPIFFS.open(CONFIG_FILE, "w");
-  serializeJson(doc, file);
-  file.close();
-}
-
-void startAPMode() {
-  WiFi.softAP(AP_SSID, AP_PASS);
-  Serial.println("📡 Modo AP iniciado");
-  Serial.print("IP AP: ");
-  Serial.println(WiFi.softAPIP());
-}
-
-void setupServer() {
-  server.on("/", HTTP_GET, []() {
-    String html = "<html><body style='font-size:18px;'>";
-    html += "<h2>ESP32 OTA Configuración</h2>";
-    html += "<form method='POST' action='/save'>";
-    html += "SSID: <input name='ssid' style='font-size:18px'><br>";
-    html += "Password: <input type='password' name='pass' style='font-size:18px'><br><br>";
-    html += "<button type='submit' style='font-size:18px'>Guardar WiFi</button></form><br><br>";
-    html += "<form action='/update'><button style='font-size:18px'>Actualizar Firmware OTA</button></form>";
-    if (isUpdating) {
-      html += "<p>📦 Progreso: " + String(otaProgress) + "%</p>";
-    }
-    html += "</body></html>";
-    server.send(200, "text/html", html);
-  });
-
-  server.on("/save", HTTP_POST, []() {
-    ssid = server.arg("ssid");
-    password = server.arg("pass");
-    saveCredentials(ssid, password);
-    server.send(200, "text/html", "<p>✅ Credenciales guardadas. Ahora puedes presionar Actualizar Firmware OTA.</p><a href='/'>Volver</a>");
-  });
-
-  server.on("/update", HTTP_GET, []() {
-    server.send(200, "text/html", "<p>🔄 Iniciando actualización OTA... Verifica el monitor serial para ver el progreso.</p><a href='/'>Volver</a>");
-    performOTAUpdate();
-  });
-
-  server.begin();
-}
-
-void performOTAUpdate() {
-  isUpdating = true;
-  otaProgress = 0;
-
-  HTTPClient http;
-  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
-  http.begin(FIRMWARE_URL);
-  int httpCode = http.GET();
-
-  if (httpCode == HTTP_CODE_OK) {
-    int contentLength = http.getSize();
-    WiFiClient& stream = http.getStream();
-
-    if (Update.begin(contentLength)) {
-      uint8_t buff[1024];
-      int totalRead = 0;
-      int lastPercent = -1;
-
-      while (http.connected() && totalRead < contentLength) {
-        int bytesRead = stream.readBytes(buff, sizeof(buff));
-        if (bytesRead > 0) {
-          totalRead += bytesRead;
-          Update.write(buff, bytesRead);
-
-          int percent = (totalRead * 100) / contentLength;
-          if (percent != lastPercent) {
-            otaProgress = percent;
-            Serial.printf("📦 Progreso: %d%%\n", percent);
-            lastPercent = percent;
-          }
-        }
-      }
-
-      if (Update.end(true)) {
-        Serial.println("✅ OTA completada. Reiniciando...");
-        delay(2000);
-        ESP.restart();
-      } else {
-        Serial.println("❌ Error al finalizar la actualización.");
-      }
-    } else {
-      Serial.println("❌ No hay suficiente espacio para OTA.");
-    }
-  } else {
-    Serial.printf("❌ Error HTTP: %d\n", httpCode);
-  }
-
-  http.end();
-  isUpdating = false;
-}
+      - name: Subir binario a release fija
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v-latest
+          name: Última versión para OTA
+          files: release/firmware.bin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
 
 

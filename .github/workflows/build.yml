@@ -24,6 +24,9 @@ jobs:
           arduino-cli config init
           arduino-cli core update-index
           arduino-cli core install esp32:esp32
+    
+      - name: Instalar ArduinoJson
+        run: arduino-cli lib install "ArduinoJson"
 
       - name: Compilar código .ino
         run: |

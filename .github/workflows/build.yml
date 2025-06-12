@@ -28,7 +28,8 @@ jobs:
       - name: Compilar código .ino
         run: |
           mkdir -p build
-          arduino-cli compile --fqbn esp32:esp32:esp32 --output-dir build src/
+          arduino-cli compile --fqbn esp32:esp32:esp32:FlashFreq=80,UploadSpeed=921600,PartitionScheme=default_4MBWithSPIFSSpiffs,FlashSize=4M --output-dir build src/
+
 
       - name: Renombrar binario
         run: |

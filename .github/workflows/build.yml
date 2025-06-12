@@ -33,7 +33,7 @@ jobs:
       - name: Mover .bin a carpeta firmware
         run: |
           mkdir -p firmware
-          cp build/*.bin firmware/firmware.bin
+          cp build/src.ino.bin firmware/firmware.bin
 
       - name: Subir .bin como artefacto
         uses: actions/upload-artifact@v4

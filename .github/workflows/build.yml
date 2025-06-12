@@ -27,12 +27,13 @@ jobs:
 
       - name: Compilar código .ino
         run: |
-          arduino-cli compile --fqbn esp32:esp32:esp32 src/
-
+          mkdir -p build
+          arduino-cli compile --fqbn esp32:esp32:esp32 --output-dir build src/
+     
       - name: Mover .bin a carpeta firmware
         run: |
           mkdir -p firmware
-          cp build/esp32.esp32.esp32/*.bin firmware/firmware.bin
+          cp build/*.bin firmware/firmware.bin
 
       - name: Subir .bin como artefacto
         uses: actions/upload-artifact@v4

@@ -6,9 +6,8 @@
 #include <ArduinoJson.h>
 
 #define FIRMWARE_URL "https://github.com/Rodrigo5036/colabi/releases/download/v-latest/firmware.bin"
-#define AP_SSID "ESP32_SETUP"
-#define AP_PASS ""
 #define CONFIG_FILE "/config.json"
+#define LED_PIN 2
 
 WebServer server(80);
 
@@ -16,8 +15,6 @@ String ssid = "";
 String password = "";
 bool isUpdating = false;
 int otaProgress = 0;
-
-const int LED_PIN = 2;
 unsigned long lastBlink = 0;
 bool ledState = false;
 
@@ -27,6 +24,7 @@ void setup() {
   Serial.println("🔌 Iniciando ESP32...");
 
   pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
 
   if (!SPIFFS.begin(true)) {
     Serial.println("❌ Error iniciando SPIFFS");
@@ -41,8 +39,7 @@ void setup() {
 void loop() {
   server.handleClient();
 
-  // Parpadeo LED en pin 2
-  if (millis() - lastBlink > 500) {
+  if (millis() - lastBlink >= 500) {
     ledState = !ledState;
     digitalWrite(LED_PIN, ledState);
     lastBlink = millis();
@@ -71,7 +68,7 @@ void saveCredentials(const String& ssid, const String& password) {
 }
 
 void startAPMode() {
-  WiFi.softAP(AP_SSID, AP_PASS);
+  WiFi.softAP("ESP32_SETUP", "");
   Serial.println("📡 Modo AP iniciado");
   Serial.print("IP AP: ");
   Serial.println(WiFi.softAPIP());
@@ -97,7 +94,7 @@ void setupServer() {
     ssid = server.arg("ssid");
     password = server.arg("pass");
     saveCredentials(ssid, password);
-    server.send(200, "text/html", "<p>✅ Credenciales guardadas. Ahora puedes presionar Actualizar Firmware OTA.</p><a href='/'>Volver</a>");
+    server.send(200, "text/html", "<p>✅ Credenciales guardadas. Puedes presionar 'Actualizar Firmware OTA' cuando lo desees.</p><a href='/'>Volver</a>");
   });
 
   server.on("/update", HTTP_GET, []() {
@@ -111,6 +108,28 @@ void setupServer() {
 void performOTAUpdate() {
   isUpdating = true;
   otaProgress = 0;
+
+  Serial.println("📶 Conectando a WiFi para OTA...");
+  WiFi.begin(ssid.c_str(), password.c_str());
+  unsigned long startAttempt = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - startAttempt < 10000) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("\n❌ No se pudo conectar a WiFi para OTA.");
+    isUpdating = false;
+    return;
+  }
+
+  Serial.println("\n✅ WiFi conectado.");
+  Serial.print("IP local: ");
+  Serial.println(WiFi.localIP());
+
+  Serial.println("🔄 Iniciando actualización OTA...");
+  Serial.print("🌐 Descargando desde: ");
+  Serial.println(FIRMWARE_URL);
 
   HTTPClient http;
   http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);

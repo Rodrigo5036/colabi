@@ -1,4 +1,3 @@
-//12ef
 #include <WiFi.h>
 #include <WebServer.h>
 #include <SPIFFS.h>
@@ -67,13 +66,13 @@ void startAPMode() {
 
 void setupServer() {
   server.on("/", HTTP_GET, []() {
-    String html = "<html><body style='font-size:18px;'>";
+    String html = "<html><body style='font-size:22px; font-family:sans-serif;'>";
     html += "<h2>ESP32 OTA Configuración</h2>";
     html += "<form method='POST' action='/save'>";
-    html += "SSID: <input name='ssid' style='font-size:18px'><br>";
-    html += "Password: <input type='password' name='pass' style='font-size:18px'><br><br>";
-    html += "<button type='submit' style='font-size:18px'>Guardar WiFi</button></form><br><br>";
-    html += "<form action='/update'><button style='font-size:18px'>Actualizar Firmware OTA</button></form>";
+    html += "<label>SSID:</label><br><input name='ssid' style='font-size:18px; width:100%;'><br><br>";
+    html += "<label>Password:</label><br><input type='password' name='pass' style='font-size:18px; width:100%;'><br><br>";
+    html += "<button type='submit' style='font-size:18px; width:100%;'>Guardar WiFi</button></form><br><br>";
+    html += "<form action='/update'><button style='font-size:18px; width:100%; background-color:#4CAF50; color:white;'>Actualizar Firmware OTA</button></form>";
     if (isUpdating) {
       html += "<p>📦 Progreso: " + String(otaProgress) + "%</p>";
     }

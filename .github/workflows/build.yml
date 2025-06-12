@@ -1,4 +1,4 @@
-name: Compilar ESP32
+name: Compilar y liberar firmware OTA
 
 on:
   push:
@@ -30,24 +30,20 @@ jobs:
           mkdir -p build
           arduino-cli compile --fqbn esp32:esp32:esp32 --output-dir build src/
 
-      - name: Mover .bin a carpeta firmware
+      - name: Renombrar binario
         run: |
-          mkdir -p firmware
-          cp build/src.ino.bin firmware/firmware.bin
+          mkdir -p release
+          cp build/src.ino.bin release/firmware.bin
 
-      - name: Subir firmware.bin al repositorio
+      - name: Subir binario a release fija
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v-latest
+          name: Última versión para OTA
+          files: release/firmware.bin
+          token: ${{ secrets.GH_TOKEN }}
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          GH_USER: ${{ secrets.GH_USER }}
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-
-          git fetch origin main
-          git checkout main
-          git add firmware/firmware.bin
-          git commit -m "Update firmware OTA [bot]" || echo "No changes to commit"
-          git push https://x-access-token:${GH_TOKEN}@github.com/${GH_USER}/colabi.git HEAD:main
+          GITHUB_REPOSITORY: Rodrigo5036/colabi
 
 
           

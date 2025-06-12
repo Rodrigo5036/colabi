@@ -32,7 +32,7 @@ jobs:
       - name: Mover .bin a carpeta firmware
         run: |
           mkdir -p firmware
-          cp src/build/esp32.esp32.esp32/*.bin firmware/firmware.bin
+          cp build/esp32.esp32.esp32/*.bin firmware/firmware.bin
 
       - name: Subir .bin como artefacto
         uses: actions/upload-artifact@v4

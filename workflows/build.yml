@@ -1,0 +1,40 @@
+name: Compilar ESP32
+
+on:
+  push:
+    paths:
+      - 'src/**.ino'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v3
+
+      - name: Instalar Arduino CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
+          echo "$HOME/bin" >> $GITHUB_PATH
+
+      - name: Instalar ESP32 core
+        run: |
+          arduino-cli config init
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32
+
+      - name: Compilar código .ino
+        run: |
+          arduino-cli compile --fqbn esp32:esp32:esp32 src/
+
+      - name: Mover .bin a carpeta firmware
+        run: |
+          mkdir -p firmware
+          cp src/build/esp32.esp32.esp32/*.bin firmware/firmware.bin
+
+      - name: Subir .bin como artefacto
+        uses: actions/upload-artifact@v3
+        with:
+          name: firmware
+          path: firmware/firmware.bin

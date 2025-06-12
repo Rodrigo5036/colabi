@@ -43,5 +43,6 @@ jobs:
           git checkout main
           git add firmware/firmware.bin
           git commit -m "Update firmware OTA [bot]" || echo "Sin cambios"
-          git push https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }} HEAD:main
+          git push https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/Rodrigo5036/colabi.git HEAD:main
+
           

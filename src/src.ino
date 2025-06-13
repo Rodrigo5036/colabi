@@ -1,5 +1,5 @@
 //1
-#include "ColabiOTA/ColabiOTA.h"
+#include "ColabiOTA.h"
 
 const int ledPin = 2;
 unsigned long lastToggle = 0;

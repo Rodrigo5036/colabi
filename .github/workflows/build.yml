@@ -40,17 +40,17 @@ jobs:
             ~/.arduino15/libraries
           key: esp32-core-${{ hashFiles('src/src.ino') }}
 
-      - name: Configurar Arduino CLI
+      - name: Instalar Arduino CLI
         uses: arduino/setup-arduino-cli@v1
         with:
           version: latest
 
-      - name: Configurar core ESP32 y librerías necesarias
-        uses: arduino/setup-arduino-core@v1
-        with:
-          platform: esp32:esp32
-          install-libraries: |
-            ArduinoJson
+      - name: Instalar ESP32 core y librerías necesarias
+        run: |
+          arduino-cli config init
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32
+          arduino-cli lib install "ArduinoJson"
 
       - name: Compilar código .ino
         run: |
@@ -70,5 +70,3 @@ jobs:
           files: release/firmware.bin
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-
-          

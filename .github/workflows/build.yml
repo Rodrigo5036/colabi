@@ -3,9 +3,7 @@ name: Compilar y liberar firmware OTA
 on:
   push:
     paths:
-      - 'src/src.ino'  # Detecta solo cambios en este archivo específico
-    branches:
-      - main  # Opcional: solo activa en la rama principal
+      - 'src/src.ino'
 
 jobs:
   build:
@@ -15,13 +13,20 @@ jobs:
       - name: Clonar el repositorio
         uses: actions/checkout@v3
 
+      - name: Cancelar si src/src.ino fue eliminado
+        run: |
+          if [ ! -f src/src.ino ]; then
+            echo "❌ src/src.ino fue eliminado. Cancelando workflow."
+            exit 0
+          fi
+
       - name: Instalar Arduino CLI
         run: |
           curl -fsSL https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Linux_64bit.tar.gz -o arduino-cli.tar.gz
           tar -xzf arduino-cli.tar.gz
           sudo mv arduino-cli /usr/local/bin/
 
-      - name: Instalar ESP32 core y librerías
+      - name: Instalar ESP32 core y librerías necesarias
         run: |
           arduino-cli config init
           arduino-cli core update-index

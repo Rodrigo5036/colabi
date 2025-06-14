@@ -39,7 +39,10 @@ jobs:
             ~/.arduino15/packages
             ~/.arduino15/staging
             ~/.arduino15/libraries
-          key: esp32-core-${{ hashFiles('src/src.ino') }}
+          key: esp32-core-cache-v1
+          restore-keys: |
+            esp32-core-cache-
+
 
       - name: Instalar Arduino CLI manualmente
         if: steps.checkfile.outputs.exists == 'true'

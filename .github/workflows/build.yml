@@ -14,11 +14,21 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Verificar existencia de src/src.ino
-        id: check_file
+        id: checkfile
         run: |
-          if [ ! -f src/src.ino ]; then
-            echo "src/src.ino no existe. Cancelando workflow como exitoso." && exit 0
+          if [ -f src/src.ino ]; then
+            echo "✅ Archivo src/src.ino existe. Continuando..."
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "ℹ️ Archivo src/src.ino NO existe. Finalizando sin ejecutar compilación."
+            echo "exists=false" >> $GITHUB_OUTPUT
           fi
+
+      - name: Finalizar sin errores si el archivo fue eliminado
+        if: steps.checkfile.outputs.exists == 'false'
+        run: |
+          echo "🚫 Nada que hacer. Terminando workflow exitosamente."
+          exit 0
 
       - name: Restaurar caché de dependencias
         uses: actions/cache@v3

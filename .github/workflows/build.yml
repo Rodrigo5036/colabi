@@ -3,7 +3,9 @@ name: Compilar y liberar firmware OTA
 on:
   push:
     paths:
-      - 'src/**.ino'
+      - 'src/src.ino'  # Detecta solo cambios en este archivo específico
+    branches:
+      - main  # Opcional: solo activa en la rama principal
 
 jobs:
   build:
@@ -19,7 +21,7 @@ jobs:
           tar -xzf arduino-cli.tar.gz
           sudo mv arduino-cli /usr/local/bin/
 
-      - name: Instalar ESP32 core
+      - name: Instalar ESP32 core y librerías
         run: |
           arduino-cli config init
           arduino-cli core update-index

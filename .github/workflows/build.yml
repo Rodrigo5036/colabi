@@ -31,6 +31,7 @@ jobs:
           exit 0
 
       - name: Restaurar caché de dependencias
+        if: steps.checkfile.outputs.exists == 'true'
         uses: actions/cache@v3
         with:
           path: |
@@ -41,12 +42,14 @@ jobs:
           key: esp32-core-${{ hashFiles('src/src.ino') }}
 
       - name: Instalar Arduino CLI manualmente
+        if: steps.checkfile.outputs.exists == 'true'
         run: |
           curl -fsSL https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Linux_64bit.tar.gz -o arduino-cli.tar.gz
           tar -xzf arduino-cli.tar.gz
           sudo mv arduino-cli /usr/local/bin/
 
       - name: Instalar ESP32 core y librerías necesarias
+        if: steps.checkfile.outputs.exists == 'true'
         run: |
           arduino-cli config init
           arduino-cli core update-index
@@ -54,16 +57,19 @@ jobs:
           arduino-cli lib install "ArduinoJson"
 
       - name: Compilar código .ino
+        if: steps.checkfile.outputs.exists == 'true'
         run: |
           mkdir -p build
           arduino-cli compile --fqbn esp32:esp32:esp32 --output-dir build src/
 
       - name: Renombrar binario
+        if: steps.checkfile.outputs.exists == 'true'
         run: |
           mkdir -p release
           cp build/src.ino.bin release/firmware.bin
 
       - name: Subir binario a release fija
+        if: steps.checkfile.outputs.exists == 'true'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v-latest
@@ -71,4 +77,3 @@ jobs:
           files: release/firmware.bin
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-

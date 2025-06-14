@@ -14,51 +14,45 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Verificar existencia de src/src.ino
-        id: checkfile
+        id: check_file
         run: |
-          if [ -f src/src.ino ]; then
-            echo "✅ Archivo src/src.ino existe. Continuando..."
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "ℹ️ Archivo src/src.ino NO existe. Finalizando sin ejecutar compilación."
-            echo "exists=false" >> $GITHUB_OUTPUT
+          if [ ! -f src/src.ino ]; then
+            echo "src/src.ino no existe. Cancelando workflow como exitoso." && exit 0
           fi
 
-      - name: Finalizar sin errores si el archivo fue eliminado
-        if: steps.checkfile.outputs.exists == 'false'
-        run: |
-          echo "🚫 Nada que hacer. Terminando workflow exitosamente."
-          exit 0
+      - name: Restaurar caché de dependencias
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.arduino15
+            ~/.arduino15/packages
+            ~/.arduino15/staging
+            ~/.arduino15/libraries
+          key: esp32-core-${{ hashFiles('src/src.ino') }}
 
-      - name: Instalar Arduino CLI
-        if: steps.checkfile.outputs.exists == 'true'
-        run: |
-          curl -fsSL https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Linux_64bit.tar.gz -o arduino-cli.tar.gz
-          tar -xzf arduino-cli.tar.gz
-          sudo mv arduino-cli /usr/local/bin/
+      - name: Configurar Arduino CLI
+        uses: arduino/setup-arduino-cli@v1
+        with:
+          version: latest
 
-      - name: Instalar ESP32 core y librerías necesarias
-        if: steps.checkfile.outputs.exists == 'true'
-        run: |
-          arduino-cli config init
-          arduino-cli core update-index
-          arduino-cli core install esp32:esp32
-          arduino-cli lib install "ArduinoJson"
+      - name: Configurar core ESP32 y librerías necesarias
+        uses: arduino/setup-arduino-core@v1
+        with:
+          platform: esp32:esp32
+          install-libraries: |
+            ArduinoJson
 
       - name: Compilar código .ino
-        if: steps.checkfile.outputs.exists == 'true'
         run: |
           mkdir -p build
           arduino-cli compile --fqbn esp32:esp32:esp32 --output-dir build src/
 
       - name: Renombrar binario
-        if: steps.checkfile.outputs.exists == 'true'
         run: |
           mkdir -p release
           cp build/src.ino.bin release/firmware.bin
 
       - name: Subir binario a release fija
-        if: steps.checkfile.outputs.exists == 'true'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v-latest
@@ -66,8 +60,5 @@ jobs:
           files: release/firmware.bin
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-
-
-
 
           

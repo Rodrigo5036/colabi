@@ -1,6 +1,6 @@
 //1
 #include "ColabiOTA.h"
-#include <ServoESP32.h>
+#include <ESP32Servo.h>
 
 ServoESP32 miServo;
 

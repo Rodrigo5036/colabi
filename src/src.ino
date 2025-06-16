@@ -1,13 +1,12 @@
-//1
 #include "ColabiOTA.h"
 #include <ESP32Servo.h>
 
-ServoESP32 miServo;
+Servo miServo;
 
 unsigned long previousMillis = 0;
-const long intervalo = 1000; // Cambiar este valor a 3000 o 5000 para mover cada 3 o 5 segundos
+const long intervalo = 1000; // cambiar a 3000 o 5000 si quieres más lento
 int angulo = 0;
-const int servoPin = 18; // Define servoPin antes de usarlo
+const int servoPin = 18;
 
 void setup() {
   ColabiOTA::begin();
@@ -18,10 +17,10 @@ void setup() {
 void loop() {
   ColabiOTA::handle();
   unsigned long currentMillis = millis();
-  
+
   if (currentMillis - previousMillis >= intervalo) {
     previousMillis = currentMillis;
-    angulo = (angulo == 0) ? 90 : 0; // Alternar entre 0 y 90 grados
+    angulo = (angulo == 0) ? 90 : 0;
     miServo.write(angulo);
   }
 }

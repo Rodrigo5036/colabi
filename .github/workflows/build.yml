@@ -43,7 +43,6 @@ jobs:
           restore-keys: |
             esp32-core-cache-
 
-
       - name: Instalar Arduino CLI manualmente
         if: steps.checkfile.outputs.exists == 'true'
         run: |
@@ -57,7 +56,12 @@ jobs:
           arduino-cli config init --overwrite
           arduino-cli core update-index
           arduino-cli core install esp32:esp32
-          arduino-cli lib install "ArduinoJson"
+          if [ -f src/requirements.txt ]; then
+            echo "📦 Instalando librerías desde requirements.txt..."
+            arduino-cli lib install $(cat src/requirements.txt)
+          else
+            echo "ℹ️ No se encontró requirements.txt. Continuando sin instalar librerías adicionales."
+          fi
 
       - name: Compilar código .ino
         if: steps.checkfile.outputs.exists == 'true'
@@ -80,3 +84,4 @@ jobs:
           files: release/firmware.bin
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+

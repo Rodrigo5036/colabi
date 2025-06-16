@@ -1,4 +1,0 @@
-WiFi
-PubSubClient
-Adafruit_Sensor
-DHTesp

@@ -2,7 +2,7 @@
 #include <ESP32Servo.h>  
 
 Servo myServo;  
-const int servoPin = 18;  
+const int servoPin = 13;  
 unsigned long previousMillis = 0;  
 const long interval = 5000;  
 

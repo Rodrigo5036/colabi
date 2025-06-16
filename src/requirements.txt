@@ -1,4 +1,0 @@
-WiFi.h
-Adafruit_Sensor.h
-DHT.h
-Adafruit_SSD1306.h

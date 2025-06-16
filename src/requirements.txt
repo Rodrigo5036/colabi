@@ -1,1 +1,0 @@
-Por favor, proporciona el código C++ que deseas analizar para generar el archivo `requirements.txt`.

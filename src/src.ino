@@ -1,36 +1,27 @@
-#include <WiFi.h>
-#include <ESPAsyncWebServer.h>
-#include <ArduinoJson.h>
+```cpp
+#include <ESP32Servo.h>
 #include "ColabiOTA.h"
 
-const char* ssid = "tuSSID";
-const char* password = "tuContrasena";
-
-AsyncWebServer server(80);
+Servo myServo;
+int servoPin = 18;
 
 void setup() {
-    ColabiOTA::begin();
-    
-    // Conectar a la red WiFi
-    WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(1000);
-    }
-    
-    // Configurar el servidor para servir subtítulos
-    server.on("/subtitulos", HTTP_GET, [](AsyncWebServerRequest *request){
-        StaticJsonDocument<200> doc;
-        doc["subtitulos"] = "Subtítulos realizados por la comunidad de Amara.org";
-        
-        String output;
-        serializeJson(doc, output);
-        request->send(200, "application/json", output);
-    });
-    
-    // Iniciar el servidor
-    server.begin();
+  ColabiOTA::begin();
+  myServo.attach(servoPin);
+  myServo.write(0);  // Inicia el servomotor en la posición 0 grados
 }
 
 void loop() {
-    ColabiOTA::handle();
+  ColabiOTA::handle();
+
+  for (int pos = 0; pos <= 180; pos += 1) {  // Mueve el servomotor desde 0 a 180 grados
+    myServo.write(pos);
+    delay(15);  // Espera para que el movimiento sea visible
+  }
+
+  for (int pos = 180; pos >= 0; pos -= 1) {  // Mueve el servomotor de regreso desde 180 a 0 grados
+    myServo.write(pos);
+    delay(15);  // Espera para que el movimiento sea visible
+  }
 }
+```

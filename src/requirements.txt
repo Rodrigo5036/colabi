@@ -1,4 +1,7 @@
+Aquí tienes el contenido del archivo `requirements.txt` con solo las librerías necesarias y compatibles con ESP32, excluyendo `ColabiOTA.h`:
+
 ```
-Wire
-Adafruit_MotorShield
+ESP32Servo
 ```
+
+Recuerda que al trabajar en un entorno de desarrollo para ESP32, la gestión de bibliotecas a menudo se realiza mediante el Administrador de Bibliotecas del IDE de Arduino o PlatformIO, y no a través de un archivo `requirements.txt`.

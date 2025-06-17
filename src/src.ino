@@ -1,29 +1,18 @@
-```cpp
-#include <Wire.h>
-#include <Adafruit_MotorShield.h>
 #include "ColabiOTA.h"
+#include <ESP32Servo.h>
 
-// Creación del objeto de la placa de motor Adafruit
-Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
-Adafruit_DCMotor *motor = AFMS.getMotor(1);
+Servo myServo;
 
 void setup() {
-    ColabiOTA::begin();
-    AFMS.begin(); // Inicializa la placa de motor
-    motor->setSpeed(255); // Establece la velocidad a máxima (0-255)
-    motor->run(FORWARD); // Configura el motor para girar hacia adelante
+  ColabiOTA::begin();
+  myServo.attach(18); // Pin GPIO 18, cambiar según configuración
+  myServo.write(90); // Posición inicial del servo a 90 grados
 }
 
 void loop() {
-    ColabiOTA::handle();
-    // Implementación de funcionalidad simple de control de motor
-    // Cambiamos de dirección cada 5 segundos
-    static unsigned long lastChange = 0;
-    unsigned long currentMillis = millis();
-    
-    if (currentMillis - lastChange >= 5000) {
-        motor->run(motor->read() == FORWARD ? BACKWARD : FORWARD);
-        lastChange = currentMillis;
-    }
+  ColabiOTA::handle();
+  delay(2000); // Pausa de 2 segundos
+  myServo.write(0); // mueve el servo a 0 grados
+  delay(2000); // Pausa de 2 segundos
+  myServo.write(180); // mueve el servo a 180 grados
 }
-```

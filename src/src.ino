@@ -1,18 +1,25 @@
 #include "ColabiOTA.h"
-#include <ESP32Servo.h>
+#include <Adafruit_NeoPixel.h>
 
-Servo myServo;
+#define LED_PIN 2 // Pin del LED interno del ESP32
+#define NUMPIXELS 1
+
+Adafruit_NeoPixel pixels(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 void setup() {
   ColabiOTA::begin();
-  myServo.attach(18); // Conectar al pin 18
-  myServo.write(90);  // Posición inicial 90 grados
+  pixels.begin();
 }
 
 void loop() {
   ColabiOTA::handle();
-  myServo.write(0);   // Mover a 0 grados
+  pixels.setPixelColor(0, pixels.Color(255, 0, 0)); // RGB: Rojo
+  pixels.show();
   delay(1000);
-  myServo.write(180); // Mover a 180 grados
+  pixels.setPixelColor(0, pixels.Color(0, 255, 0)); // RGB: Verde
+  pixels.show();
+  delay(1000);
+  pixels.setPixelColor(0, pixels.Color(0, 0, 255)); // RGB: Azul
+  pixels.show();
   delay(1000);
 }

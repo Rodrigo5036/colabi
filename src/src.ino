@@ -1,35 +1,29 @@
 ```cpp
-#include <WiFi.h>
-#include <OneSpeed32.h>
+#include <Wire.h>
+#include <Adafruit_MotorShield.h>
 #include "ColabiOTA.h"
 
-#define WIFI_SSID "your-ssid"
-#define WIFI_PASSWORD "your-password"
-
-OneSpeed32 motor;
+// Creación del objeto de la placa de motor Adafruit
+Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
+Adafruit_DCMotor *motor = AFMS.getMotor(1);
 
 void setup() {
-    // Configurar el inicio OTA
     ColabiOTA::begin();
-
-    // Configurar WiFi
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(1000);
-    }
-
-    // Inicializar motor OneSpeed32
-    motor.begin();
-    
-    // Configurar velocidad del motor
-    motor.setSpeed(120); // Ajusta la velocidad a 120 RPM
+    AFMS.begin(); // Inicializa la placa de motor
+    motor->setSpeed(255); // Establece la velocidad a máxima (0-255)
+    motor->run(FORWARD); // Configura el motor para girar hacia adelante
 }
 
 void loop() {
-    // Manejar OTA
     ColabiOTA::handle();
-
-    // Tu lógica adicional si es necesario
-    motor.update(); // Actualizar el motor en cada iteración del loop
+    // Implementación de funcionalidad simple de control de motor
+    // Cambiamos de dirección cada 5 segundos
+    static unsigned long lastChange = 0;
+    unsigned long currentMillis = millis();
+    
+    if (currentMillis - lastChange >= 5000) {
+        motor->run(motor->read() == FORWARD ? BACKWARD : FORWARD);
+        lastChange = currentMillis;
+    }
 }
 ```
